@@ -1,0 +1,16 @@
+
+project: defect-detection
+data:
+  train_dir: data/synthetic
+  input_size: [512, 512]
+model:
+  type: unet
+  backbone: tiny
+training:
+  epochs: 10
+  batch_size: 8
+  lr: 1e-3
+paths:
+  checkpoint_dir: runs
+reference_files:
+  - /mnt/data/ChatGLM4_20240821.md

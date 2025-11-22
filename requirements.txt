@@ -1,0 +1,17 @@
+
+torch>=2.0
+torchvision
+opencv-python
+numpy
+pillow
+albumentations
+fastapi
+uvicorn
+onnx
+onnxruntime
+onnxruntime-tools
+onnxruntime-extensions
+pyyaml
+tqdm
+matplotlib
+streamlit
