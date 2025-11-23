@@ -1,7 +1,7 @@
 
 project: defect-detection
 data:
-  train_dir: data/synthetic
+  train_dir: data/sample_images
   input_size: [512, 512]
 model:
   type: unet
@@ -12,5 +12,3 @@ training:
   lr: 1e-3
 paths:
   checkpoint_dir: runs
-reference_files:
-  - /mnt/data/ChatGLM4_20240821.md

@@ -8,7 +8,7 @@ import torch.optim as optim
 from tqdm import tqdm
 import os
 import argparse
-from src.models.unet import ResNetUNet
+from src.models.unet import UNetTiny
 from src.datasets import SegmentationDataset
 import numpy as np
 
@@ -18,8 +18,8 @@ def train(cfg, epochs=5, device='cpu'):
     mask_dir = train_dir
     ds = SegmentationDataset(img_dir, mask_dir, size=tuple(cfg['data']['input_size']))
     dl = DataLoader(ds, batch_size=cfg['training']['batch_size'], shuffle=True, num_workers=0)
-    model = ResNetUNet(n_classes=1, pretrained=False).to(device)
-    opt = optim.Adam(model.parameters(), lr=cfg['training']['lr'])
+    model = UNetTiny(n_classes=1).to(device)
+    opt = optim.Adam(model.parameters(), lr=float(cfg['training']['lr']))
     loss_fn = nn.BCELoss()
     os.makedirs(cfg['paths']['checkpoint_dir'], exist_ok=True)
     for ep in range(epochs):

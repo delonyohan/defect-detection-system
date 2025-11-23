@@ -1,51 +1,74 @@
-
-#!/usr/bin/env python3
-"""Generate synthetic metal textures with random scratches (simple overlays)."""
-import os
-import cv2
 import numpy as np
+from PIL import Image, ImageDraw
+import os
 from pathlib import Path
-import argparse
 
-def random_metal(h, w):
-    base = np.random.normal(loc=120, scale=10, size=(h, w)).astype(np.uint8)
-    # subtle vertical grain
-    for i in range(0, w, 20):
-        delta = np.random.randint(-5, 6)
-        base[:, i:i+2] = np.clip(base[:, i:i+2] + delta, 0, 255)
-    return cv2.cvtColor(base, cv2.COLOR_GRAY2BGR)
+def generate_synthetic_data(num_images=20, img_size=(256, 256)):
+    output_dir = Path('data/synthetic_images')
+    output_dir.mkdir(exist_ok=True)
 
-def add_scratch(img):
-    h, w = img.shape[:2]
-    mask = np.zeros((h, w), dtype=np.uint8)
-    # random polyline
-    num_pts = np.random.randint(5, 12)
-    xs = np.linspace(int(w*0.1), int(w*0.9), num=num_pts).astype(int)
-    ys = (np.sin(np.linspace(0, np.pi*2, num=num_pts)) * (h*0.02) + 
-          np.random.randint(h//3, 2*h//3, size=num_pts)).astype(int)
-    pts = np.vstack([xs, ys]).T
-    thickness = np.random.randint(1, 4)
-    cv2.polylines(mask, [pts], False, 255, thickness=thickness)
-    # blurred center line
-    scratch = cv2.GaussianBlur(mask, (5,5), 0)
-    colored = img.copy()
-    colored[scratch>0] = np.clip(colored[scratch>0] + 40, 0, 255)
-    rim = cv2.dilate(mask, np.ones((3,3), np.uint8)) - mask
-    colored[rim>0] = np.clip(colored[rim>0] - 30, 0, 255)
-    return colored, mask
+    for i in range(num_images):
+        # Create a blank image with a random background color
+        background_color = tuple(np.random.randint(200, 256, 3))
+        img = Image.new('RGB', img_size, color=background_color)
+        draw = ImageDraw.Draw(img)
 
-def main(out_dir, count=200, size=512):
-    Path(out_dir).mkdir(parents=True, exist_ok=True)
-    for i in range(count):
-        img = random_metal(size, size)
-        img_s, mask = add_scratch(img)
-        cv2.imwrite(os.path.join(out_dir, f"img_{i:04d}.png"), img_s)
-        cv2.imwrite(os.path.join(out_dir, f"mask_{i:04d}.png"), mask)
+        # Draw a random shape (rectangle or circle) as the main object
+        shape_type = np.random.choice(['rectangle', 'circle'])
+        shape_color = tuple(np.random.randint(100, 200, 3))
+        
+        if shape_type == 'rectangle':
+            x1 = np.random.randint(10, 50)
+            y1 = np.random.randint(10, 50)
+            x2 = np.random.randint(200, 240)
+            y2 = np.random.randint(200, 240)
+            draw.rectangle([x1, y1, x2, y2], fill=shape_color)
+        else: # circle
+            x = np.random.randint(100, 150)
+            y = np.random.randint(100, 150)
+            r = np.random.randint(50, 100)
+            draw.ellipse((x-r, y-r, x+r, y+r), fill=shape_color)
+
+        # Create a corresponding mask
+        mask = Image.new('L', img_size, color=0)
+        mask_draw = ImageDraw.Draw(mask)
+
+        # Add a "defect" (a smaller shape) to the image and mask
+        defect_type = np.random.choice(['rectangle', 'circle'])
+        defect_color = tuple(np.random.randint(0, 100, 3))
+        defect_x = np.random.randint(50, 200)
+        defect_y = np.random.randint(50, 200)
+        defect_size = np.random.randint(10, 30)
+
+        if defect_type == 'rectangle':
+            draw.rectangle(
+                [defect_x, defect_y, defect_x + defect_size, defect_y + defect_size], 
+                fill=defect_color
+            )
+            mask_draw.rectangle(
+                [defect_x, defect_y, defect_x + defect_size, defect_y + defect_size], 
+                fill=255
+            )
+        else: # circle
+            draw.ellipse(
+                (defect_x - defect_size, defect_y - defect_size, defect_x + defect_size, defect_y + defect_size), 
+                fill=defect_color
+            )
+            mask_draw.ellipse(
+                (defect_x - defect_size, defect_y - defect_size, defect_x + defect_size, defect_y + defect_size), 
+                fill=255
+            )
+            
+        # Add some noise to the image
+        img_array = np.array(img)
+        noise = np.random.randint(-10, 10, img_array.shape, dtype='int16')
+        img_array = np.clip(img_array.astype('int16') + noise, 0, 255).astype('uint8')
+        img = Image.fromarray(img_array)
+
+        # Save the image and mask
+        img.save(output_dir / f'img_{i:04d}.png')
+        mask.save(output_dir / f'mask_{i:04d}.png')
 
 if __name__ == '__main__':
-    p = argparse.ArgumentParser()
-    p.add_argument('--out_dir', default='data/synthetic')
-    p.add_argument('--count', type=int, default=200)
-    p.add_argument('--size', type=int, default=512)
-    args = p.parse_args()
-    main(args.out_dir, args.count, args.size)
+    generate_synthetic_data()
+    print(f"Generated synthetic data in {Path('data/synthetic_images').resolve()}")

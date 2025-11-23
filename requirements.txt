@@ -13,5 +13,7 @@ onnxruntime-tools
 onnxruntime-extensions
 pyyaml
 tqdm
-matplotlib
 streamlit
+scikit-learn
+matplotlib
+noise
